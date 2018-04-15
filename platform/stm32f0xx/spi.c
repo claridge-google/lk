@@ -38,6 +38,19 @@
 #define SPI_FIFO_HALF    0x2
 #define SPI_FIFO_FULL    0x3
 
+#if defined(ENABLE_SPI1) && defined(ENABLE_SPI2)
+#error Mutliple enabled SPI not supported
+#endif
+
+#ifdef ENABLE_SPI1
+#define SPI_REGS SPI1
+#define SPI_CLK STM32_RCC_CLK_SPI1
+#endif
+#ifdef ENABLE_SPI2
+#define SPI_REGS SPI2
+#define SPI_CLK STM32_RCC_CLK_SPI2
+#endif
+
 typedef SPI_TypeDef spi_regs_t;
 
 uint32_t spi_dma_width_flag;
@@ -50,12 +63,12 @@ void spi_init(spi_data_size_t data_size,
               spi_prescaler_t prescaler)
 {
 
-    spi_regs_t *regs = SPI1;
+    spi_regs_t *regs = SPI_REGS;
     uint16_t temp_reg;
 
     mutex_init(&spi_mutex);
 
-    stm32_rcc_set_enable(STM32_RCC_CLK_SPI1, true);
+    stm32_rcc_set_enable(SPI_CLK, true);
 
     regs->CR1 = cpol | cpha | bit_order | prescaler | SPI_CR1_SSM;
 
@@ -85,7 +98,7 @@ ssize_t spi_xfer(const void *tx_buf, void *rx_buf, size_t len)
     dma_wait(DMA_CHANNEL_2);
     dma_wait(DMA_CHANNEL_3);
 
-    spi_regs_t *regs = SPI1;
+    spi_regs_t *regs = SPI_REGS;
     regs->CR1 &= ~SPI_CR1_SPE;
 
     // Make sure to start read DMA first.
